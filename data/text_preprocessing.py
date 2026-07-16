@@ -18,14 +18,14 @@ MAX_SEQUENCE_LENGTH = 256    # Max tokens per post for LSTM
 MAX_VOCABULARY_SIZE = 20000  # Top N most frequent words
 PADDING_TOKEN       = "<PAD>"
 UNKNOWN_TOKEN       = "<UNK>"
-# REVIEW [Functionality — BUG]: This value is high enough to break the project's own test
+# REVIEW [Functionality, BUG]: This value is high enough to break the project's own test
 # suite: tests/test_preprocessing.py::TestFullPipeline builds its fixtures with ~14-16 word
 # posts, all of which fall below this threshold. `prepare_smhd_dataset()` then filters out
 # every sample and raises "No valid posts found after filtering!", failing 3 tests
 # (verified: `pytest tests/ -q` -> "3 failed, 53 passed, 4 skipped"), which contradicts the
 # README's "Unit test suite (30+ tests)" checkbox. Either lower MIN_POST_LENGTH to a value
-# that matches realistic short Reddit posts, or update the test fixtures to use ≥20-word
-# text — right now the constant and the tests disagree about what "valid" input looks like.
+# that matches realistic short Reddit posts, or update the test fixtures to use >=20-word
+# text: right now the constant and the tests disagree about what "valid" input looks like.
 MIN_POST_LENGTH     = 20     # Minimum words — shorter posts are dropped
 
 # Label mapping

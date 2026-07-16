@@ -78,13 +78,13 @@ def compute_subscale_scores(answers: Dict[str, int]) -> Dict[str, int]:
     }
 
 
-# REVIEW [Logic/readability]: Docstring vs implementation mismatch — the docstring below says
+# REVIEW [Logic/readability]: Docstring vs implementation mismatch: the docstring below says
 # "Confidence = how far above threshold / max possible" (i.e. (score - threshold) / (max -
 # threshold)), but the code actually computes `scores[label] / MAX_SCORE`, i.e. the raw score
 # over 42, which is a different number. That's not necessarily the wrong choice, but right now
-# the comment and the code tell two different stories about what "confidence" means clinically
-# — worth fixing whichever one doesn't reflect the intended meaning so the next person (or
-# your dissertation write-up) doesn't have to guess.
+# the comment and the code tell two different stories about what "confidence" means clinically,
+# so it's worth fixing whichever one doesn't reflect the intended meaning so the next person
+# (or your dissertation write-up) doesn't have to guess.
 #
 # REVIEW [Logic/readability]: This scoring/classification logic is duplicated with a slight
 # behavioural difference in app/streamlit_app.py's classify_dass() and again in
@@ -188,7 +188,7 @@ def build_feature_vector(answers: Dict[str, int]) -> np.ndarray:
 
 
 # REVIEW [Security/performance]: No validation that df["q1".."q21"] actually contain integers
-# 0-3 before scoring — `int(row.get(...))` will raise an uncaught ValueError on a malformed
+# 0-3 before scoring: `int(row.get(...))` will raise an uncaught ValueError on a malformed
 # CSV (e.g. a blank cell or a stray string), and out-of-range values (e.g. 9) would silently
 # produce an invalid "elevated" score instead of being rejected. Worth clamping/validating
 # input range given this feeds a clinical-style classification.

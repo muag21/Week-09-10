@@ -74,7 +74,7 @@ def load_models():
     models = {}
 
     # REVIEW [Security/performance]: `except Exception: ... = None` here (and for BERT below)
-    # is indistinguishable between "model file doesn't exist yet" and a genuine failure —
+    # is indistinguishable between "model file doesn't exist yet" and a genuine failure:
     # corrupted weights, wrong TensorFlow/transformers version, out-of-memory, a permissions
     # error, etc. All of those currently present to the user as the same "not trained yet"
     # status in the sidebar, which will hide a real bug until someone digs through logs.
@@ -156,7 +156,7 @@ def classify_dass(scores: dict) -> tuple:
     # (1 - max_score/42) for the equivalent "control" branch in
     # data/dass_processing.py::classify_label() and mindpulse_complete.py::classify_dass_label().
     # This is the concrete symptom of having three copies of the same scoring logic (see also
-    # the module-level duplication note this reviewer left in dass_processing.py) — someone
+    # the module-level duplication note this reviewer left in dass_processing.py): someone
     # tweaked the confidence formula in one copy and not the others, so identical answers can
     # now produce different confidence numbers depending on which code path handled them.
     if not elevated:
@@ -427,7 +427,7 @@ def page_physio():
     # REVIEW [Security/performance]: No row-count or size sanity check before parsing an
     # arbitrary user-uploaded CSV and (once wired up) running it through Butterworth
     # filtering + FFT feature extraction. Streamlit's default uploader cap (200MB) is the only
-    # limit in place — a large-but-under-that-cap file could still mean a very long/expensive
+    # limit in place, and a large-but-under-that-cap file could still mean a very long/expensive
     # `pd.read_csv()` plus per-window signal processing over many windows for a public-facing
     # tool with no auth in front of it. Worth adding an explicit max-rows check (and a
     # friendly error) before processing.
@@ -456,12 +456,12 @@ def page_physio():
             st.error(f"Could not read file: {e}. Please make sure it is a valid CSV.")
 
 
-# REVIEW [Functionality]: This module has no database import or user/session concept at all —
+# REVIEW [Functionality]: This module has no database import or user/session concept at all,
 # `main()` never creates a user, session, or calls anything resembling persistence, so
 # page_history() below is necessarily fully hardcoded placeholder data. That's consistent with
 # the README's "in progress" status for DB integration, but worth flagging that the DB schema,
 # CRUD layer, and history query already exist and work in mindpulse_complete.py's Database
-# class — the missing piece is purely wiring this file up to it (passing a `db` and
+# class: the missing piece is purely wiring this file up to it (passing a `db` and
 # `user_id`/`session_id` through the page functions), not building it from scratch.
 def page_history():
     """User history and trend page."""
