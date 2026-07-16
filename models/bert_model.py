@@ -7,6 +7,16 @@
 #            Labels: 0=Control, 1=Depression, 2=Anxiety
 # ============================================================
 
+# REVIEW [Coding standards]: `AdamW` was removed from `transformers` in favour of
+# `torch.optim.AdamW` (functionally the same optimizer) in recent releases. With
+# transformers==4.35.0 pinned in requirements.txt this specific import may still work but is
+# deprecated upstream and worth switching to `from torch.optim import AdamW` now rather than
+# waiting for a future dependency bump to break it.
+#
+# REVIEW [Coding standards]: `BertTokenizer`/`BertForSequenceClassification` are used directly.
+# `AutoTokenizer`/`AutoModelForSequenceClassification` are the more future-proof convention —
+# they let BERT_MODEL_NAME be swapped for a different checkpoint (e.g. RoBERTa, a
+# mental-health-domain-pretrained model) without changing any imports.
 import numpy as np
 import os
 import torch

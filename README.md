@@ -44,6 +44,12 @@ mindpulse/
 ├── app/
 │   ├── streamlit_app.py           # Main web app (Usama)
 │   └── database.py                # DB models & CRUD (Ahmad)
+<!-- REVIEW [Coding standards]: app/database.py does not exist in the repo — the
+     User/Session/Prediction models and CRUD Database class currently only live inside
+     mindpulse_complete.py. Either add the standalone file this diagram promises (and wire
+     app/streamlit_app.py up to it — see the review comment on page_history() in that file),
+     or update this diagram so a new contributor navigating by the README isn't sent
+     looking for a file that isn't there. -->
 ├── tests/
 │   └── test_preprocessing.py      # Unit tests (Hanzla)
 └── README.md

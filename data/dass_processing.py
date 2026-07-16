@@ -78,6 +78,21 @@ def compute_subscale_scores(answers: Dict[str, int]) -> Dict[str, int]:
     }
 
 
+# REVIEW [Logic/readability]: Docstring vs implementation mismatch — the docstring below says
+# "Confidence = how far above threshold / max possible" (i.e. (score - threshold) / (max -
+# threshold)), but the code actually computes `scores[label] / MAX_SCORE`, i.e. the raw score
+# over 42, which is a different number. That's not necessarily the wrong choice, but right now
+# the comment and the code tell two different stories about what "confidence" means clinically
+# — worth fixing whichever one doesn't reflect the intended meaning so the next person (or
+# your dissertation write-up) doesn't have to guess.
+#
+# REVIEW [Logic/readability]: This scoring/classification logic is duplicated with a slight
+# behavioural difference in app/streamlit_app.py's classify_dass() and again in
+# mindpulse_complete.py's classify_dass_label(). The "control" branch already disagrees between
+# copies: this function computes a real confidence from the max score, while
+# streamlit_app.py's classify_dass() just hardcodes confidence=0.85 for control. Consider
+# having the app import this module instead of re-implementing the same thresholds, so the
+# three copies can't quietly drift further apart.
 def classify_label(scores: Dict[str, int]) -> Tuple[str, float]:
     """
     Apply clinical thresholds to assign a label and confidence.
@@ -172,6 +187,17 @@ def build_feature_vector(answers: Dict[str, int]) -> np.ndarray:
     return np.concatenate([raw_items, subscales])
 
 
+# REVIEW [Security/performance]: No validation that df["q1".."q21"] actually contain integers
+# 0-3 before scoring — `int(row.get(...))` will raise an uncaught ValueError on a malformed
+# CSV (e.g. a blank cell or a stray string), and out-of-range values (e.g. 9) would silently
+# produce an invalid "elevated" score instead of being rejected. Worth clamping/validating
+# input range given this feeds a clinical-style classification.
+#
+# REVIEW [Coding standards/performance]: Iterates row-by-row with df.iterrows(), which is a
+# well-known pandas anti-pattern for anything beyond questionnaire-sized batches (each row
+# access with iterrows() is far slower than vectorised operations). Fine for a handful of
+# responses; if this is ever run over a bulk dataset, a vectorised version (matrix-multiply
+# the answer columns against a one-hot item-to-subscale mapping) would scale much better.
 def process_dass_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
     Process a full DASS-21 dataset DataFrame.

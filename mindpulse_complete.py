@@ -35,6 +35,26 @@
 ================================================================
 """
 
+# ============================================================================
+# REVIEW [Coding standards/logic — biggest single issue in this review]:
+# This ~1800-line file re-implements everything that already exists as separate modules in
+# data/, models/, and app/ — text preprocessing, DASS-21 scoring, WESAD signal processing,
+# the LSTM architecture, the BERT fine-tuning loop, and the Streamlit app — each with its own
+# copy of shared constants (THRESHOLDS, DEPRESSION_ITEMS, WESAD_SAMPLING_RATES,
+# MAX_SEQUENCE_LENGTH, etc.), plus a Database/User/Session/Prediction layer that doesn't exist
+# anywhere else in the repo at all.
+#
+# This roughly doubles the surface area anyone (a teammate or a reviewer) has to read to
+# understand the system, and it's already caused real drift: the DASS-21 "control" confidence
+# is computed three different ways across data/dass_processing.py, app/streamlit_app.py, and
+# this file's own classify_dass_label() (see the inline notes left in those files). Any future
+# bug fix now has to be remembered and applied in up to three places.
+#
+# If a single-file version is needed for a submission format, consider generating it with a
+# small build script that concatenates the module files, rather than hand-maintaining a second
+# copy that will keep diverging from the "real" one every time either side is edited.
+# ============================================================================
+
 # ── Standard imports ──────────────────────────────────────────
 import os
 import re
@@ -870,6 +890,15 @@ def setup_bert_training(
         return None, None
 
 
+# REVIEW [Security/performance — significant]: This function loads BertTokenizer and
+# BertForSequenceClassification from disk from scratch on every call (page_text_analysis()
+# below calls `predict_bert(text_input)` directly on every "Analyse Text" click). That
+# completely bypasses the caching set up in load_all_models() — whose own docstring says
+# @st.cache_resource is "Critical for BERT which is ~400MB and would be unbearably slow to
+# reload on every button click" — because predict_bert() never receives or reuses the
+# already-loaded `models["bert"]` pipeline; it just reloads the ~400MB model synchronously,
+# every single request. This should accept the cached model/pipeline as a parameter instead
+# of re-instantiating it internally.
 def predict_bert(
     text      : str,
     model_path: str = "models/saved/bert_mindpulse",
@@ -998,17 +1027,38 @@ class Database:
         """Create all database tables. Safe to run multiple times."""
         Base.metadata.create_all(bind=engine)
 
+    # REVIEW [Security — high priority]: Salting is good, but plain salted SHA-256 is a fast,
+    # general-purpose hash — it's designed to compute quickly, which is exactly the wrong
+    # property for password storage. It's crackable at billions of guesses/second on
+    # commodity GPUs, unlike a deliberately slow, tunable password KDF. For an app collecting
+    # mental-health-linked user accounts, recommend swapping this for `bcrypt`,
+    # `argon2-cffi` (Argon2id), or `werkzeug.security.generate_password_hash` before any real
+    # user data is stored against this table — it's a small, localised change (just these two
+    # methods) for a meaningful security improvement.
     def hash_password(self, password: str) -> str:
         """Hash password with random salt. Never store plain passwords."""
         salt   = secrets.token_hex(16)
         hashed = hashlib.sha256((password + salt).encode()).hexdigest()
         return f"{salt}:{hashed}"
 
+    # REVIEW [Security/functionality — edge case]: `stored_hash.split(":", 1)` assumes the
+    # stored value always contains exactly the "salt:hash" format written by hash_password().
+    # If stored_hash is ever missing, empty, or malformed (e.g. from a partially-written row,
+    # a migration, or manual DB edit), this raises an uncaught ValueError instead of failing
+    # safely as "invalid credentials" — worth wrapping in a try/except that returns False.
     def verify_password(self, password: str, stored_hash: str) -> bool:
         """Verify a password against its stored hash."""
         salt, hashed = stored_hash.split(":", 1)
         return hashlib.sha256((password + salt).encode()).hexdigest() == hashed
 
+    # REVIEW [Security/coding standards]: `except Exception as e: db.rollback(); return None`
+    # catches everything indiscriminately — a duplicate username/email (IntegrityError, the
+    # expected case given the `unique=True` columns above) looks identical to a genuine
+    # connection failure or programming error, since `e` is captured but never logged or
+    # surfaced. A caller has no way to tell "username taken" apart from "database is down".
+    # Recommend catching `sqlalchemy.exc.IntegrityError` specifically for the expected
+    # duplicate case, and letting other exceptions propagate (or at least be logged) rather
+    # than silently becoming `None`.
     def create_user(self, username: str, email: str,
                     password: str, consent: bool = False) -> Optional[User]:
         """Create a new user account."""
@@ -1467,6 +1517,14 @@ def page_physio():
             st.write("Please make sure it is a valid CSV file.")
 
 
+# REVIEW [Functionality]: Database.get_user_history(user_id) already exists and works (joins
+# Prediction+Session, orders by date, formats confidence as a percentage) — but nothing in
+# this app ever creates a User or a Session, so there is no real user_id to call it with.
+# `db` is threaded through page_history(db) as a parameter but never actually used in the
+# function body below. This is a fully-built feature that's disconnected from the UI, not a
+# not-yet-built one — the missing piece is a login/identify step (even a simple
+# "enter a username" on Home) that creates a session via db.create_session() and threads the
+# resulting user_id through to here and to save_prediction() calls elsewhere.
 # ── PAGE: History ─────────────────────────────────────────────
 def page_history(db: Database):
     st.title("📊 My History")
@@ -1542,6 +1600,13 @@ def page_about():
     | Hybrid | Text + physiological | Multi-modal fusion |
     """)
 
+    # REVIEW [Functionality — matters given the subject matter]: The Database class (see
+    # Section 7) has no delete_user / delete_session / delete_prediction method, and no page
+    # in this app exposes a way to trigger one. Given this is a mental-health screening tool
+    # explicitly promising users the right to delete their data (and the kind of GDPR-style
+    # expectation that comes with storing health-adjacent information), this claim should
+    # either be backed by a real delete flow before going further, or softened until one
+    # exists — right now it's an ethical/compliance commitment the code doesn't fulfil.
     st.subheader("Ethics Statement")
     st.error("""
     ⚠️ MindPulse is a SCREENING TOOL only — not a medical diagnosis.

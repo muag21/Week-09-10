@@ -53,6 +53,17 @@ def fitted_processor():
     return tp
 
 
+# REVIEW [Functionality — BUG, verified]: These fixture posts are 14-16 words each, all below
+# MIN_POST_LENGTH=20 (data/text_preprocessing.py). is_valid_post() filters out every single one,
+# so prepare_smhd_dataset() raises "No valid posts found after filtering!" for every test that
+# uses this fixture. Confirmed by running `pytest tests/ -q`:
+#   FAILED test_prepare_smhd_returns_correct_shapes
+#   FAILED test_short_posts_are_filtered
+#   FAILED test_processor_encodes_new_text_after_fitting
+#   3 failed, 53 passed, 4 skipped
+# These tests currently cannot pass regardless of whether prepare_smhd_dataset() is correct —
+# the fixture text needs to be ≥20 words (or MIN_POST_LENGTH needs revisiting), otherwise this
+# is effectively untested code despite appearing in a 30+-test suite.
 @pytest.fixture
 def sample_data():
     texts = [
@@ -261,6 +272,9 @@ class TestFullPipeline:
         assert X.shape[1] == MAX_SEQUENCE_LENGTH
         assert len(X) == len(y)
 
+    # REVIEW [Functionality — BUG, verified]: Same root cause as the sample_data fixture above
+    # — the "long enough" post here is only 15 words, still under MIN_POST_LENGTH=20, so it
+    # gets filtered too and prepare_smhd_dataset() raises before this test's asserts ever run.
     def test_short_posts_are_filtered(self):
         texts  = ["too short", "also too short",
                   "this is a long enough post with many words to pass the filter check today"]
