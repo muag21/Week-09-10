@@ -140,7 +140,8 @@ class TextPreprocessor:
         self.index_to_word: Dict[int, str] = {}
         self.vocab_size: int = 0
 
-    def clean_text(self, text: str) -> str:
+    # REVIEW: Consider validating extremely long inputs to avoid excessive processing time.
+def clean_text(self, text: str) -> str:
         """
         Remove noise from raw Reddit post.
 
@@ -171,7 +172,8 @@ class TextPreprocessor:
         """Return True if post has at least MIN_POST_LENGTH words."""
         return len(text.split()) >= MIN_POST_LENGTH
 
-    def build_vocab(self, texts: List[str]) -> None:
+    # REVIEW: Vocabulary size is capped, which is good. Consider storing word frequencies for future analysis.
+def build_vocab(self, texts: List[str]) -> None:
         """
         Build word to integer dictionary from training texts.
 
@@ -195,7 +197,8 @@ class TextPreprocessor:
         self.index_to_word = {v: k for k, v in self.word_to_index.items()}
         self.vocab_size = len(self.word_to_index)
 
-    def encode(self, text: str) -> List[int]:
+    # REVIEW: Good defensive check before encoding. Consider logging failures for easier debugging.
+def encode(self, text: str) -> List[int]:
         """
         Convert clean text to list of integers.
         Unknown words map to index 1 (UNK).
@@ -276,6 +279,7 @@ def prepare_smhd_dataset(
 #  SECTION 3 — DASS-21 PROCESSING (Puja)
 # ================================================================
 
+# REVIEW: Consider validating that all questionnaire responses are within the expected range (0-3).
 def compute_subscale_scores(answers: Dict[str, int]) -> Dict[str, int]:
     """
     Compute DASS-21 subscale scores from raw answers.
@@ -297,6 +301,7 @@ def compute_subscale_scores(answers: Dict[str, int]) -> Dict[str, int]:
     }
 
 
+# REVIEW: Edge case: consider handling tied subscale scores explicitly.
 def classify_dass_label(scores: Dict[str, int]) -> Tuple[str, float]:
     """
     Apply official DASS-21 clinical thresholds to assign label.
@@ -354,6 +359,7 @@ def build_dass_feature_vector(answers: Dict[str, int]) -> np.ndarray:
 #  SECTION 4 — PHYSIOLOGICAL SIGNAL PREPROCESSING (Puja)
 # ================================================================
 
+# REVIEW: Good separation of preprocessing responsibilities into a dedicated class.
 class SignalPreprocessor:
     """
     Processes raw WESAD physiological signals into
@@ -369,7 +375,8 @@ class SignalPreprocessor:
         7. z_score_normalise()     — standardise to mean=0 std=1
     """
 
-    def apply_bandpass_filter(
+    # REVIEW: Consider validating cutoff frequencies to prevent invalid Butterworth filter parameters.
+def apply_bandpass_filter(
         self,
         signal_data  : np.ndarray,
         sampling_rate: float,
@@ -393,7 +400,8 @@ class SignalPreprocessor:
         b, a     = scipy_signal.butter(order, [low, high], btype="band")
         return scipy_signal.filtfilt(b, a, signal_data)
 
-    def segment_signal(
+    # REVIEW: Consider returning a warning when recordings are too short for segmentation.
+def segment_signal(
         self,
         signal_data  : np.ndarray,
         sampling_rate: float,
@@ -415,7 +423,8 @@ class SignalPreprocessor:
 
         return windows
 
-    def extract_time_features(
+    # REVIEW: Statistical features are appropriate; median could also improve robustness to outliers.
+def extract_time_features(
         self,
         window: np.ndarray,
         prefix: str = "",
@@ -438,7 +447,8 @@ class SignalPreprocessor:
             f"{prefix}peaks": float(len(peaks)),
         }
 
-    def extract_freq_features(
+    # REVIEW: Consider checking for empty or constant signals before FFT analysis.
+def extract_freq_features(
         self,
         window       : np.ndarray,
         sampling_rate: float,
@@ -466,7 +476,8 @@ class SignalPreprocessor:
             f"{prefix}lf_hf_ratio" : ratio,
         }
 
-    def extract_hrv_features(
+    # REVIEW: Good fallback for insufficient R-peaks. Logging could help diagnose poor signal quality.
+def extract_hrv_features(
         self,
         ecg_window   : np.ndarray,
         sampling_rate: float,
@@ -534,7 +545,8 @@ class SignalPreprocessor:
 
         return np.array([all_features[k] for k in sorted(all_features.keys())])
 
-    def z_score_normalise(
+    # REVIEW: Good practice preventing division by zero. Save training statistics for inference consistency.
+def z_score_normalise(
         self,
         feature_matrix: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -558,6 +570,7 @@ class SignalPreprocessor:
 #  SECTION 5 — LSTM MODEL (Puja)
 # ================================================================
 
+# REVIEW: Architecture is clear. Consider exposing hyperparameters via a configuration file.
 def build_lstm_model():
     """
     Build LSTM model for mental health text classification.
@@ -612,6 +625,7 @@ def build_lstm_model():
         return None
 
 
+# REVIEW: Good use of EarlyStopping and ReduceLROnPlateau. Consider fixing random seeds for reproducibility.
 def train_lstm(
     X_train   : np.ndarray,
     y_train   : np.ndarray,
@@ -671,6 +685,7 @@ def train_lstm(
         return None, {}
 
 
+# REVIEW: Consider adding ROC-AUC or Precision-Recall metrics if class imbalance is significant.
 def evaluate_model(model, X_test: np.ndarray, y_test: np.ndarray, model_name: str = "Model") -> Dict:
     """
     Evaluate any classification model on test set.
@@ -724,6 +739,7 @@ def evaluate_model(model, X_test: np.ndarray, y_test: np.ndarray, model_name: st
 #  SECTION 6 — BERT MODEL (Hanzla)
 # ================================================================
 
+# REVIEW: GPU detection is good. Consider mixed-precision training to improve performance.
 def setup_bert_training(
     texts_train : List[str],
     labels_train: List[int],
@@ -870,6 +886,7 @@ def setup_bert_training(
         return None, None
 
 
+# REVIEW: Consider validating empty input text before tokenisation.
 def predict_bert(
     text      : str,
     model_path: str = "models/saved/bert_mindpulse",
@@ -983,6 +1000,7 @@ class Prediction(Base):
     session = relationship("Session", back_populates="predictions")
 
 
+# REVIEW: Database operations are well encapsulated. More specific exception handling would improve maintainability.
 class Database:
     """
     Simple database interface — CRUD operations for MindPulse.
@@ -998,7 +1016,8 @@ class Database:
         """Create all database tables. Safe to run multiple times."""
         Base.metadata.create_all(bind=engine)
 
-    def hash_password(self, password: str) -> str:
+    # REVIEW: Security suggestion: bcrypt or Argon2 is generally preferred over SHA-256 for password storage.
+def hash_password(self, password: str) -> str:
         """Hash password with random salt. Never store plain passwords."""
         salt   = secrets.token_hex(16)
         hashed = hashlib.sha256((password + salt).encode()).hexdigest()
@@ -1009,7 +1028,8 @@ class Database:
         salt, hashed = stored_hash.split(":", 1)
         return hashlib.sha256((password + salt).encode()).hexdigest() == hashed
 
-    def create_user(self, username: str, email: str,
+    # REVIEW: Consider logging database errors instead of silently returning None.
+def create_user(self, username: str, email: str,
                     password: str, consent: bool = False) -> Optional[User]:
         """Create a new user account."""
         db = SessionLocal()
@@ -1050,7 +1070,8 @@ class Database:
         finally:
             db.close()
 
-    def save_prediction(
+    # REVIEW: Consider validating confidence values remain within the range [0,1].
+def save_prediction(
         self,
         session_id : str,
         model_used : str,
@@ -1144,6 +1165,7 @@ st.markdown("""
 
 # ── Load models (once at startup) ────────────────────────────
 @st.cache_resource
+# REVIEW: Good use of Streamlit resource caching to reduce repeated model loading.
 def load_all_models():
     """
     Load all trained models into memory once.
@@ -1282,6 +1304,7 @@ def page_home():
 
 
 # ── PAGE: Text Analysis ───────────────────────────────────────
+# REVIEW: Input length validation improves usability. Consider sanitising unusual Unicode characters.
 def page_text_analysis(models: dict, db: Database):
     st.title("📝 Text Analysis")
     show_ethics_banner()
@@ -1331,6 +1354,7 @@ def page_text_analysis(models: dict, db: Database):
 
 
 # ── PAGE: DASS-21 Quiz ────────────────────────────────────────
+# REVIEW: Form layout is clear. Consider preserving partial progress if the page refreshes.
 def page_quiz(db: Database):
     st.title("📋 DASS-21 Questionnaire")
     show_ethics_banner()
@@ -1411,6 +1435,7 @@ def page_quiz(db: Database):
 
 
 # ── PAGE: Physiological Upload ────────────────────────────────
+# REVIEW: Consider validating required CSV columns before processing to provide earlier feedback.
 def page_physio():
     st.title("📈 Physiological Signal Upload")
     show_ethics_banner()
@@ -1468,6 +1493,7 @@ def page_physio():
 
 
 # ── PAGE: History ─────────────────────────────────────────────
+# REVIEW: Current history is placeholder data. Integrating the database history would complete this feature.
 def page_history(db: Database):
     st.title("📊 My History")
 
@@ -1508,6 +1534,7 @@ def page_history(db: Database):
 
 
 # ── PAGE: About & Ethics ──────────────────────────────────────
+# REVIEW: Good inclusion of ethics and bias information, which is important for healthcare-related AI.
 def page_about():
     st.title("ℹ️ About MindPulse & Ethics")
 
@@ -1571,6 +1598,7 @@ def page_about():
 #  SECTION 9 — MAIN APP ROUTER (Usama)
 # ================================================================
 
+# REVIEW: Navigation logic is easy to follow. Consider using an Enum or constants for page identifiers.
 def main():
     """
     Main function — sets up sidebar navigation and routes
@@ -1645,6 +1673,7 @@ def main():
 import pytest
 
 
+# REVIEW: Test coverage is good. Consider adding punctuation-only and multilingual input cases.
 class TestTextPreprocessor:
     """Unit tests for text preprocessing functions."""
 
@@ -1751,6 +1780,7 @@ class TestDASS21:
         assert all(0.0 <= v <= 1.0 for v in norm.values())
 
 
+# REVIEW: Consider testing noisy physiological signals and invalid sampling rates.
 class TestSignalPreprocessor:
     """Unit tests for physiological signal preprocessing."""
 
