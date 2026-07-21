@@ -10,6 +10,8 @@
 import numpy as np
 import os
 import torch
+#The standard-library os import should appear before third-party imports such as NumPy and PyTorch to follow PEP 8 import-grouping conventions.
+
 from torch.utils.data import Dataset, DataLoader
 from transformers import (
     BertTokenizer,
@@ -47,6 +49,7 @@ class MentalHealthDataset(Dataset):
 
     Takes a list of texts and labels, tokenises them using
     BERT tokeniser, and returns tensors ready for BERT.
+#The dataset class includes a clear docstring describing its purpose and constructor arguments, improving readability and maintainability.
 
     Args:
         texts     : List of raw text strings
@@ -54,7 +57,7 @@ class MentalHealthDataset(Dataset):
         tokenizer : HuggingFace BERT tokenizer
         max_length: Maximum token length (512 for BERT)
     """
-
+#Functionality:The constructor should verify that texts and labels have equal lengths. Mismatched inputs could cause an index error while loading training batches.
     def __init__(
         self,
         texts     : List[str],
@@ -66,7 +69,7 @@ class MentalHealthDataset(Dataset):
         self.labels    = labels
         self.tokenizer = tokenizer
         self.max_length = max_length
-
+#Coding Standards:The __len__() and __getitem__() methods are missing return-type and parameter type annotations, which is inconsistent with the type hints used elsewhere in the file.
     def __len__(self):
         return len(self.texts)
 
@@ -82,7 +85,7 @@ class MentalHealthDataset(Dataset):
             truncation      = True,
             return_tensors  = "pt"
         )
-
+#Functionality:Calling squeeze() without specifying a dimension may remove more dimensions than intended. Using squeeze(0) would make the expected tensor transformation explicit and safer.
         return {
             "input_ids"      : encoding["input_ids"].squeeze(),
             "attention_mask" : encoding["attention_mask"].squeeze(),
@@ -184,7 +187,7 @@ def train_bert(
     print(f"\nFine-tuning BERT on {len(texts_train):,} samples...")
     print(f"Epochs: {NUM_EPOCHS}, Batch size: {BATCH_SIZE}")
     print(f"Device: {DEVICE}\n")
-
+#Security and Performance: Gradient clipping at line 211 helps prevent exploding gradients and improves numerical stability during BERT fine-tuning.
     for epoch in range(NUM_EPOCHS):
         # ── Training phase ────────────────────────────────────
         model.train()
@@ -234,7 +237,7 @@ def train_bert(
                     attention_mask = attention_mask,
                     labels         = labels
                 )
-
+#Functionality: Dividing by the loader length assumes that the training and validation datasets are non-empty. Input checks should be added to prevent division-by-zero errors.
                 total_val_loss += outputs.loss.item()
                 preds = torch.argmax(outputs.logits, dim=1)
                 all_preds.extend(preds.cpu().numpy())
@@ -253,6 +256,7 @@ def train_bert(
         print(f"  Val Loss      : {avg_val_loss:.4f}")
         print(f"  Val Accuracy  : {val_accuracy:.4f}")
         print(f"  Val F1 Macro  : {val_f1:.4f}")
+#Logic and Readability:The best model is selected using validation accuracy even though macro F1 is also calculated. For an imbalanced mental-health dataset, macro F1 may provide a more appropriate checkpoint criterion.
 
         # Save best model
         if val_accuracy > best_val_accuracy:

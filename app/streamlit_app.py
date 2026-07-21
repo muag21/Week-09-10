@@ -13,6 +13,7 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from datetime import datetime
+#Coding Standards: The NumPy and datetime imports are not used in this file. Removing unused imports would improve code cleanliness and follow Python coding standards.
 
 
 # ── Page configuration ────────────────────────────────────────
@@ -61,6 +62,7 @@ st.markdown("""
 def load_models():
     """
     Load all trained models into memory once at startup.
+#Security and Performance: Using @st.cache_resource prevents large models from being reloaded after every interaction, reducing memory use and improving application performance.
 
     Using @st.cache_resource means this runs only ONCE
     when the app first loads — not on every user click.
@@ -79,6 +81,7 @@ def load_models():
         models["lstm"] = tf.keras.models.load_model("models/saved/lstm_model.h5")
     except Exception:
         models["lstm"] = None   # Not trained yet
+#Logic and Readability:Catching the broad Exception type hides the actual reason a model failed to load. Specific exceptions should be handled and the failure should be logged for debugging.
 
     # Try loading BERT
     try:
@@ -107,6 +110,7 @@ def compute_dass_scores(answers: dict) -> dict:
         Stress    : q1, q6, q8,  q11, q12, q14, q18
 
     Score = sum of 7 items × 2 (to match 42-item DASS norms)
+#Coding Standards: DASS-21 scoring logic is duplicated even though a dedicated data/dass_processing.py module exists. Reusing that module would reduce duplication and better follow the project’s modular architecture.
 
     Args:
         answers: {"q1": 0..3, ..., "q21": 0..3}
@@ -191,6 +195,7 @@ def show_result(label: str, confidence: float, probabilities: dict):
 
     color = colors.get(label, "#5F5E5A")
     icon  = icons.get(label, "🔍")
+#The prediction label is inserted into HTML while unsafe_allow_html=True is enabled. The value should be restricted or escaped before rendering to reduce HTML-injection risk.
 
     st.markdown(f"""
     <div class="result-card" style="border-color:{color};background:{color}15">
@@ -305,6 +310,7 @@ def page_text_analysis(models: dict):
         if not text_input.strip():
             st.warning("Please write something before analysing.")
             return
+#The text-analysis page returns a fixed placeholder prediction instead of calling the selected LSTM or BERT model, so the current result does not reflect the user's input or model choice.
 
         if len(text_input.split()) < 10:
             st.warning("Please write at least 10 words for a meaningful result.")
@@ -409,6 +415,7 @@ def page_physio():
     st.write("Upload a CSV file from your wearable device (ECG, EDA, temperature).")
 
     uploaded = st.file_uploader("Upload sensor CSV", type=["csv"])
+#Security and Performance:The uploaded CSV is read without checking its size, required columns, or data types. Validation should be added to prevent excessive memory use and reject incompatible sensor data.
 
     if uploaded:
         st.success(f"File received: {uploaded.name}")
@@ -425,6 +432,8 @@ def page_physio():
                     label         = "stress"
                     confidence    = 0.81
                     probabilities = {
+                    #Displaying the complete exception message to users may expose internal implementation details. The technical error should be logged while users receive a simpler message.
+                    
                         "stress"  : 0.81,
                         "anxiety" : 0.13,
                         "control" : 0.06

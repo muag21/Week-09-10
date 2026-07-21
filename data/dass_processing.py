@@ -37,6 +37,8 @@ LABEL_MAP = {
 
 
 def compute_subscale_scores(answers: Dict[str, int]) -> Dict[str, int]:
+    #The function correctly calculates the three DASS-21 subscale scores according to the official scoring method by summing the relevant items and multiplying by two, which ensures consistency with the DASS-42 clinical scoring standard.
+
     """
     Compute the three DASS-21 subscale scores from raw answers.
 
@@ -59,6 +61,9 @@ def compute_subscale_scores(answers: Dict[str, int]) -> Dict[str, int]:
         scores = compute_subscale_scores(answers)
         # → {"depression": 14, "anxiety": 14, "stress": 14}
     """
+    #The function includes a comprehensive docstring describing its purpose, parameters, return values and example usage. This follows good Python documentation practices and improves maintainability.
+    #The function assumes that all questionnaire responses are valid integers between 0 and 3. Adding explicit input validation would prevent incorrect scores if invalid values are provided.
+
     depression_score = sum(
         answers.get(f"q{i}", 0) for i in DEPRESSION_ITEMS
     ) * 2
@@ -92,8 +97,9 @@ def classify_label(scores: Dict[str, int]) -> Tuple[str, float]:
         scores: Output of compute_subscale_scores()
 
     Returns:
-        label      : "depression", "anxiety", "stress", or "control"
+    #    label      : "depression", "anxiety", "stress", or "control"
         confidence : Float 0.0 to 1.0
+#The classification logic is straightforward and easy to follow. Separating the elevated-score calculation from the label selection improves readability and makes future maintenance easier.
 
     Example:
         scores = {"depression": 18, "anxiety": 8, "stress": 12}
@@ -102,6 +108,8 @@ def classify_label(scores: Dict[str, int]) -> Tuple[str, float]:
         # depression is the only one above its threshold (14)
     """
     elevated = {
+        #When multiple subscales have identical highest scores above the threshold, the function selects the first one returned by max(). Explicit handling of tied scores would make the behaviour clearer and more predictable.
+
         name: score
         for name, score in scores.items()
         if score >= THRESHOLDS[name]
@@ -115,6 +123,8 @@ def classify_label(scores: Dict[str, int]) -> Tuple[str, float]:
 
     # Pick the most elevated subscale
     label = max(elevated, key=elevated.get)
+    #The function follows the single-responsibility principle by performing only score normalisation, making the code modular and easier to test.
+
     confidence = min(scores[label] / MAX_SCORE, 1.0)
     return label, round(confidence, 3)
 
@@ -132,6 +142,8 @@ def normalise_scores(scores: Dict[str, int]) -> Dict[str, float]:
     Returns:
         Same keys but float values between 0.0 and 1.0
     """
+    #Meaningful variable names such as raw_items, scores, norm, and subscales improve code readability and conform to Python naming conventions.
+
     return {k: round(v / MAX_SCORE, 4) for k, v in scores.items()}
 
 
@@ -145,6 +157,8 @@ def build_feature_vector(answers: Dict[str, int]) -> np.ndarray:
         - 3 normalised subscale scores (depression, anxiety, stress)
 
     Args:
+    #Missing questionnaire responses are automatically replaced with zero using answers.get(). Although this prevents runtime errors, missing data may affect prediction quality and should ideally be validated or reported.
+
         answers: {"q1": 0..3, ..., "q21": 0..3}
 
     Returns:
@@ -164,10 +178,14 @@ def build_feature_vector(answers: Dict[str, int]) -> np.ndarray:
     scores = compute_subscale_scores(answers)
     norm   = normalise_scores(scores)
     subscales = np.array([
+        #The function processes each row using iterrows(), which is less efficient for large datasets. A vectorised pandas implementation would improve performance when processing many questionnaire responses.
+
         norm["depression"],
         norm["anxiety"],
         norm["stress"],
     ])
+
+#Converting values directly with int() may raise an exception if the dataset contains missing or non-numeric values. Additional validation or exception handling would improve robustness.
 
     return np.concatenate([raw_items, subscales])
 
@@ -177,11 +195,14 @@ def process_dass_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Process a full DASS-21 dataset DataFrame.
 
     Expects columns q1 through q21 (integer 0–3).
+    #The function returns a new DataFrame rather than modifying the original object unexpectedly, making the behaviour clearer and reducing the likelihood of unintended side effects.
+
     Adds computed columns: depression_score, anxiety_score,
     stress_score, label, confidence, label_int.
 
     Args:
         df: DataFrame with columns q1..q21
+#Including executable test cases under if __name__ == "__main__": provides a convenient way to verify the correctness of the module during development.
 
     Returns:
         Same DataFrame with new computed columns added
