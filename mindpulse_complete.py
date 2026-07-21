@@ -876,6 +876,7 @@ def predict_bert(
 ) -> Dict:
     """
     Run BERT inference on a single text string.
+#Security and Performance: predict_bert() reloads the tokenizer and BERT model from disk for every prediction. Pass the cached model from load_all_models() instead to avoid unnecessary memory use and slow inference.
 
     Args:
         text       : Raw text string to classify
@@ -1003,7 +1004,7 @@ class Database:
         salt   = secrets.token_hex(16)
         hashed = hashlib.sha256((password + salt).encode()).hexdigest()
         return f"{salt}:{hashed}"
-
+#Security: Passwords are stored using a single SHA-256 hash, which is not suitable for password protection. Use a dedicated password-hashing method such as Argon2, bcrypt, or Werkzeug’s password utilities.
     def verify_password(self, password: str, stored_hash: str) -> bool:
         """Verify a password against its stored hash."""
         salt, hashed = stored_hash.split(":", 1)
@@ -1419,7 +1420,7 @@ def page_physio():
     st.info("Expected columns: `ecg`, `eda`, `temperature` — one row per sample")
 
     uploaded = st.file_uploader("Upload sensor CSV", type=["csv"])
-
+#Security and Performance: Uploaded CSV files are read without checking file size, row count, numeric data types, or missing values. Add validation before applying filtering and feature extraction to prevent crashes or excessive resource usage.
     if uploaded:
         try:
             df = pd.read_csv(uploaded)

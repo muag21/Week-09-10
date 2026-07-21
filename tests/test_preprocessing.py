@@ -61,6 +61,8 @@ def sample_data():
         "had a great day at the park with friends feeling good and well rested today",
         "too short",
     ]
+    #Functionality:The fixture posts contain fewer than the required 20 words, causing all three full-pipeline tests to fail. Update the fixtures or lower MIN_POST_LENGTH so the test data matches the preprocessing rules.
+
     labels = [1, 2, 0, 0]
     return texts, labels
 

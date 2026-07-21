@@ -67,6 +67,7 @@ class TestSegmentation:
         windows = sp.segment_signal(short_signal, rate)
         assert len(windows) == 0
 
+#Functionality: The signal tests cover filtering, segmentation, feature extraction, HRV, feature-vector consistency, and zero-variance normalisation. This provides good coverage of normal behaviour and important edge cases.
 
 class TestTimeFeatures:
 
