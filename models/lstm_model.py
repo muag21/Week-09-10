@@ -12,8 +12,6 @@ import os
 from typing import Tuple, Dict
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-#Setting the TensorFlow environment variable before importing TensorFlow is correct, but standard-library imports should be placed before third-party imports to follow PEP 8 import-order conventions.
-
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout
@@ -22,7 +20,6 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 from sklearn.utils.class_weight import compute_class_weight
 
-#Model hyperparameters are defined as clearly named uppercase constants, avoiding magic numbers and making the architecture easier to configure and maintain.
 
 # ── Configuration ─────────────────────────────────────────────
 VOCAB_SIZE          = 20002   # vocabulary size + 2 special tokens
@@ -48,7 +45,6 @@ def build_lstm_model() -> tf.keras.Model:
         Dropout    → 0.3
         Dense      → 32 units, ReLU activation
         Output     → 3 units, Softmax (one per class)
-#The function has a detailed docstring that documents the model architecture and return value, providing clear technical documentation for future maintainers.
 
     Returns:
         Compiled Keras model ready for training
@@ -63,7 +59,6 @@ def build_lstm_model() -> tf.keras.Model:
         mask_zero    = True,
         name         = "token_embedding"
     ))
-#The model is constructed in a clear sequential order, and descriptive layer names make the architecture easy to inspect and debug.
 
     # First LSTM layer — learns short range word patterns
     model.add(LSTM(
@@ -118,18 +113,14 @@ def train_lstm(
         X_val     : Shape (N_val, MAX_SEQUENCE_LENGTH)
         y_val     : Shape (N_val,) — labels 0, 1, or 2
         save_path : Where to save the best model
-#os.path.dirname(save_path) may return an empty string when only a filename is supplied, causing os.makedirs() to fail. The directory should be checked before attempting to create it.
 
     Returns:
         trained model and training history dictionary
-    """ #The class-weight calculation does not verify that all three expected classes are present in the training labels. Missing classes could produce incomplete weights and unreliable training behaviour.
-
+    """
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     # Compute class weights to handle imbalance
     classes      = np.unique(y_train)
-    #model.summary() already prints the model information and returns None, so wrapping it inside print() produces an unnecessary additional None output.
-
     weights_arr  = compute_class_weight("balanced", classes=classes, y=y_train)
     class_weights = dict(zip(classes.tolist(), weights_arr.tolist()))
     print(f"Class weights: {class_weights}")
@@ -209,8 +200,6 @@ def evaluate_lstm(
     # Compute metrics
     acc         = np.mean(y_pred == y_test)
     f1_macro    = f1_score(y_test, y_pred, average="macro")
-    #classification_report() should specify the expected label values explicitly; otherwise, evaluation may fail when the test set does not contain every class listed in CLASS_NAMES.
-    
     f1_weighted = f1_score(y_test, y_pred, average="weighted")
     conf_mat    = confusion_matrix(y_test, y_pred)
 
