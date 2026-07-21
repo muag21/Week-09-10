@@ -43,6 +43,7 @@ class TextPreprocessor:
         self.word_to_index : Dict[str, int] = {}
         self.index_to_word : Dict[int, str] = {}
         self.vocab_size    : int = 0
+#The clean_text() function includes a clear and detailed docstring describing its purpose, parameters, and return value, improving readability and maintainability.
 
     def clean_text(self, text: str) -> str:
         """
@@ -56,11 +57,15 @@ class TextPreprocessor:
           - Extra whitespace
 
         Args:
-            text: Raw Reddit post string
+    #The function validates the input before processing, preventing errors when empty or non-string values are provided.
+
+               text: Raw Reddit post string
 
         Returns:
             Cleaned lowercase string, or "" if input is invalid
         """
+        #The preprocessing removes URLs, mentions, and HTML entities effectively, but handling emojis and other Unicode characters could further improve text cleaning.
+
         if not text or not isinstance(text, str):
             return ""
 
@@ -82,6 +87,8 @@ class TextPreprocessor:
         Very short posts don't contain enough signal for the model.
         """
         return len(text.split()) >= MIN_POST_LENGTH
+
+   #The vocabulary-building logic is modular and separated into its own function, following the single-responsibility principle and making the code easier to maintain.
 
     def build_vocab(self, texts: List[str]) -> None:
         """
@@ -111,6 +118,7 @@ class TextPreprocessor:
         self.vocab_size = len(self.word_to_index)
 
         print(f"Vocabulary ready: {self.vocab_size:,} tokens")
+#Raising a RuntimeError when the vocabulary has not been built prevents incorrect execution, but providing a more descriptive error message or recovery guidance would improve debugging.
 
     def encode(self, text: str) -> List[int]:
         """
@@ -128,6 +136,8 @@ class TextPreprocessor:
 
     def pad_sequence(self, sequence: List[int]) -> np.ndarray:
         """
+        #The comments clearly explain why the last tokens are retained for long Reddit posts, making the implementation easier to understand.
+
         Make all sequences exactly MAX_SEQUENCE_LENGTH tokens long.
 
         Short sequences → pad with zeros at the end
@@ -178,6 +188,7 @@ def prepare_smhd_dataset(
         X         : numpy array shape (N, MAX_SEQUENCE_LENGTH)
         y         : numpy array shape (N,)
         processor : fitted TextPreprocessor — SAVE THIS for inference
+#The list comprehension is efficient for moderate datasets; however, processing very large datasets may benefit from batch processing to reduce memory usage.
 
     Example:
         X, y, processor = prepare_smhd_dataset(posts, labels)
