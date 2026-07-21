@@ -48,7 +48,9 @@ mindpulse/
 │   └── test_preprocessing.py      # Unit tests (Hanzla)
 └── README.md
 ```
+#Coding Standards:  The project structure lists app/database.py, but this file does not exist, and it omits several actual files such as bert_model.py and the additional test files. Update the structure so the documentation matches the repository.
 
+#
 ## How to Run
 
 ```bash

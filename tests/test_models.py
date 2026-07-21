@@ -37,6 +37,7 @@ class TestLSTMModel:
             assert output.shape == (4, 3)
         except ImportError:
             pytest.skip("TensorFlow not installed")
+#The TensorFlow import and try/except ImportError logic is repeated in every LSTM test. Use pytest.importorskip("tensorflow") once to reduce duplication and keep the tests easier to maintain.
 
     def test_output_probabilities_sum_to_one(self):
         """Softmax output probabilities should sum to 1.0."""
@@ -67,6 +68,7 @@ class TestLSTMModel:
 
 # ── DASS-21 Scoring Tests (from app) ─────────────────────────
 class TestDASS21AppScoring:
+#Logic and Readability: The DASS-21 scoring logic is recreated manually inside the test file instead of testing the actual scoring function. Importing the production function would ensure the tests detect errors in the real implementation.
 
     def compute_scores(self, answers):
         """Helper — compute scores the same way app does."""
