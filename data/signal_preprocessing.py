@@ -63,6 +63,14 @@ class SignalPreprocessor:
         Returns:
             Filtered 1D numpy array, same length as input
         """
+        # REVIEW [Functionality, edge case]: No check that 0 < low < high < nyquist. If a
+        # caller ever passes a high_freq at or above sampling_rate/2 (easy to do if a wearable
+        # sends a lower-than-expected sample rate), `high` ends up >= 1.0 and
+        # scipy.signal.butter() raises a fairly opaque ValueError ("Digital filter critical
+        # frequencies must be 0 < Wn < 1") rather than a message that points at the real cause.
+        # A guard here with a clear error message would make this easier to debug at the call
+        # site (e.g. page_physio() in the app, which uses whatever sampling rate is assumed
+        # for the uploaded CSV rather than one read from the file itself).
         nyquist = sampling_rate / 2.0
         low  = low_freq  / nyquist
         high = high_freq / nyquist
@@ -240,6 +248,16 @@ class SignalPreprocessor:
         all_features.update(self.extract_freq_features(ecg_window, WESAD_SAMPLING_RATES["ecg"], "ecg_"))
         all_features.update(self.extract_hrv_features(ecg_window, WESAD_SAMPLING_RATES["ecg"]))
 
+        # REVIEW [Logic/readability]: extract_freq_features() computes an LF/HF power ratio
+        # using the 0.04-0.15 Hz / 0.15-0.40 Hz bands documented above as an HRV (heart-rate
+        # variability) biomarker. Here it's also applied to the raw EDA (skin conductance)
+        # window with the same bands. LF/HF is meaningful for ECG because it reflects
+        # sympathetic/parasympathetic balance on heartbeats; EDA doesn't have that
+        # established interpretation, it's normally characterised by tonic level (SCL) and
+        # phasic peaks (SCRs) instead. This will still run and produce numbers, but as
+        # written it reads like the ECG feature extractor was reused for EDA without
+        # revisiting whether the same frequency bands are physiologically meaningful here,
+        # so it's worth confirming this is intentional rather than a copy-paste.
         all_features.update(self.extract_time_features(eda_window, "eda_"))
         all_features.update(self.extract_freq_features(eda_window, WESAD_SAMPLING_RATES["eda"], "eda_"))
 

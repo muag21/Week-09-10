@@ -13,6 +13,12 @@ import pytest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
+# REVIEW [Coding standards]: Every test method below repeats the same
+# `try: import tensorflow ... except ImportError: pytest.skip(...)` block. The idiomatic
+# pytest way to make a whole module/class conditional on an optional dependency is
+# `tensorflow = pytest.importorskip("tensorflow")` once near the top of the file — it's
+# shorter, applies uniformly, and avoids the risk of a copy-pasted try/except silently
+# swallowing something other than the intended ImportError in one of the copies.
 # ── LSTM Tests ────────────────────────────────────────────────
 class TestLSTMModel:
 

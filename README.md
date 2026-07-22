@@ -44,6 +44,21 @@ mindpulse/
 ├── app/
 │   ├── streamlit_app.py           # Main web app (Usama)
 │   └── database.py                # DB models & CRUD (Ahmad)
+<!-- REVIEW [Coding standards]: app/database.py does not exist in the repo, the
+     User/Session/Prediction models and CRUD Database class currently only live inside
+     mindpulse_complete.py. Either add the standalone file this diagram promises (and wire
+     app/streamlit_app.py up to it, see the review comment on page_history() in that file),
+     or update this diagram so a new contributor navigating by the README isn't sent
+     looking for a file that isn't there. -->
+
+<!-- REVIEW [Process note]: No test plan, coding standards, or pipeline workflow document was
+     included in this repo alongside the code (only this README), so this review was carried
+     out against general software engineering best practice rather than against the reviewed
+     team's own stated criteria. If a test plan exists elsewhere, linking it here would let
+     future reviewers check the test suite against what was actually planned to be covered
+     (e.g. does it match the "30+ tests" claim below, and are the failing tests noted in
+     tests/test_preprocessing.py part of a documented scope) rather than reviewers guessing
+     at intent from the code alone. -->
 ├── tests/
 │   └── test_preprocessing.py      # Unit tests (Hanzla)
 └── README.md

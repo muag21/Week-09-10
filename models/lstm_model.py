@@ -117,6 +117,12 @@ def train_lstm(
     Returns:
         trained model and training history dictionary
     """
+    # REVIEW [Logic/readability]: No random seed is fixed anywhere in this function (or
+    # build_lstm_model) — not for numpy, TensorFlow, or the train/val split that presumably
+    # happens before this is called. Weight initialisation, dropout, and shuffling will all
+    # differ between runs, which makes reported accuracy/F1 numbers hard to reproduce or
+    # compare across experiments. Consider `tf.random.set_seed(...)` (and documenting the
+    # numpy seed used upstream for the split) alongside a training config.
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     # Compute class weights to handle imbalance
